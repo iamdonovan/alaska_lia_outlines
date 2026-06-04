@@ -25,8 +25,9 @@ Alternatively, use the provided `environment.yml` file to create a `conda` envir
 ### LIA outlines
 
 To be able to run `scripts/finalize_outlines.py`, you will also need to download the raw LIA outline files in a
-zipped format [from here]() and unzip the file in this directory. This will unpack the three `.gpkg` files into
-a directory, `raw/`, where they will be read/used by the script.
+zipped format [from here](https://drive.google.com/file/d/1jRxHfXOeFocBPNZXZKhFig_nohPjedK0/view?usp=sharing) and 
+unzip the file in this directory. This will unpack the three `.gpkg` files into a directory, `raw/`, where they will 
+be read/used by the script.
 
 ### RGI outlines
 
