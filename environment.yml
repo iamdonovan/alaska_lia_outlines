@@ -1,0 +1,12 @@
+name: ak_lia
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+  - jupyterlab
+  - pandas
+  - geoutils
+  - pip
+  - pip:
+      - "git+https://github.com/iamdonovan/glacmaptools.git"
