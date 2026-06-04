@@ -1,0 +1,7 @@
+{
+  "rgi_base": "",
+  "rgi_ver": "v6.0",
+  "outdir": "final",
+  "srcdir": "raw",
+  "errdir": "errors"
+}
