@@ -8,25 +8,23 @@ from glacmaptools import utils
 from glacmaptools.geometry import GlacierOutlines
 
 
-def add_rgi_outline_dates(row: gpd.GeoSeries, rgi_outlines: GlacierOutlines, version: str) -> datetime.date:
+def add_rgi_outline_dates(row: gpd.GeoSeries, rgi_outlines: GlacierOutlines, rgi_info: dict) -> datetime.date:
     """
     Get the average RGI outline date, formatted as a datetime.date, for a given glacier outline.
 
     :param row: a geopandas GeoSeries corresponding to an individual glacier (i.e., a row of a GeoDataFrame)
     :param rgi_outlines: a GlacierOutlines corresponding to the RGI outlines for the given region
-    :param version: the RGI version being used [either v6.0 or v7.0]
+    :param rgi_info: a dict with key/value pairs for 'rgi_id' and 'date' for the version of the RGI being used. For
+        example, for RGI v6.0, rgi_info['date'] should return 'BgnDate', and rgi_info['rgi_id'] should return 'RGIId'.
+        For RGI v7.0, rgi_info['date'] should return 'src_date', and rgi_info['rgi_id'] should return 'rgi_id'.
     :return: the average RGI outline source date
     """
-    assert version in ['v6.0', 'v7.0']
-
-    date_col = {'v6.0': 'BgnDate', 'v7.0': 'src_date'}
-
     if row['num_other'] == 0:
         return pd.to_datetime('2000-01-01').date()
     else:
         rgi_ids = row['other_inds'].split(',')
-        dates = rgi_outlines.ds.loc[rgi_outlines['RGIId'].isin(rgi_ids), 'BgnDate'].values
-        date_ints = pd.Series([pd.to_datetime(dd, format='%Y%m%d') for dd in dates]).astype(np.int64)
+        dates = rgi_outlines.ds.loc[rgi_outlines[rgi_info['rgi_id']].isin(rgi_ids), rgi_info['date']].values
+        date_ints = pd.Series([pd.to_datetime(dd, format=rgi_info['datefmt']) for dd in dates]).astype(np.int64)
         return pd.to_datetime(date_ints.mean()).date()
 
 
@@ -35,13 +33,19 @@ rgi_dict = {
     'v6.0': {
         'rgi_id': 'RGIId',
         'o2_shp': Path('00_rgi60_regions') / '00_rgi60_O2Regions.shp',
-        'o2_name': 'RGI_CODE'
+        'o2_name': 'RGI_CODE',
+        'area': 'Area',
+        'date': 'BgnDate',
+        'datefmt': '%Y%m%d'
     },
 
     'v7.0': {
         'rgi_id': 'rgi_id',
         'o2_shp': Path('RGI2000-v7.0-regions') / 'RGI2000-v7.0-o2regions.shp',
-        'o2_name': 'o2region'
+        'o2_name': 'o2region',
+        'area': 'area_km2',
+        'date': 'src_date',
+        'datefmt': '%Y-%m-%dT%H:%M:%S'
     }
 }
 
@@ -54,6 +58,7 @@ with open('config.json') as src:
     assert config['rgi_ver'] in ['v6.0', 'v7.0'], "rgi_ver must be one of (v6.0, v7.0)"
 
     rgi_id = rgi_dict[config['rgi_ver']]['rgi_id']
+    rgi_area_name = rgi_dict[config['rgi_ver']]['area']
 
     print(f"Using RGI {config['rgi_ver']}")
     print(f"Reading RGI files from: {Path(config['rgi_base']) / config['rgi_ver']}")
@@ -110,10 +115,13 @@ diff_all['reg_id'] = lia_outlines['reg_id']
 rgi_all = GlacierOutlines(utils.rgi_loader(rgi_reg=1,
                                            rgi_dir=Path(config['rgi_base']) / config['rgi_ver'],
                                            version=config['rgi_ver']))
-rgi_sub = rgi_all[rgi_all['Area'] > 1].copy()
+rgi_sub = rgi_all[rgi_all[rgi_area_name] > 1].copy()
 
 # add the average RGI date to the outlines
-diff_all['rgi_date'] = diff_all.ds.apply(add_rgi_outline_dates, axis=1, rgi_outlines=rgi_all, version=config['rgi_ver'])
+diff_all['rgi_date'] = diff_all.ds.apply(add_rgi_outline_dates,
+                                         axis=1,
+                                         rgi_outlines=rgi_all,
+                                         rgi_info=rgi_dict[config['rgi_ver']])
 
 diff_sub = lia_outlines.compute_area_change(rgi_sub, crs=6393, other_id=rgi_id, keep_missing=False)
 diff_sub['pct_chg'] = 100 * diff_sub['area_change'] / diff_sub['area']
