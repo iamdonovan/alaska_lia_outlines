@@ -7,7 +7,7 @@ import numpy as np
 Path('final').mkdir(parents=True, exist_ok=True)
 cols = ['MapName', 'num_lia', 'num_rgi', 'lia_area', 'rgi_area', 'diff_rgi', 'pct_chg']
 
-mountain_table = gpd.read_file('final_v6/mountainregions.gpkg')
+mountain_table = gpd.read_file('final/mountainregions.gpkg')
 mountain_table = mountain_table[cols].sort_values('MapName').dropna().set_index('MapName')
 
 # get the totals for each column
